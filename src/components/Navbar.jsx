@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Shield, Radio, Clock, Wifi } from 'lucide-react';
+import { Shield, Radio, Clock, Wifi, BarChart3 } from 'lucide-react';
 
-export default function Navbar() {
+export default function Navbar({ onOpenAnalytics }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -42,6 +42,14 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-8">
+        <button
+          onClick={onOpenAnalytics}
+          className="flex items-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/30 text-cyan-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        >
+          <BarChart3 className="w-4 h-4" />
+          ANALYTICS
+        </button>
+
         <div className="flex items-center gap-2 text-slate-300">
           <Wifi className="w-4 h-4 text-emerald-400" />
           <span className="text-xs font-mono">SYSTEM ONLINE</span>
