@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Shield, Radio, Clock, Wifi, BarChart3, Keyboard, X } from 'lucide-react';
+import { Shield, Radio, Clock, Wifi, BarChart3, Keyboard, X, Download } from 'lucide-react';
+import db from '../db';
+import { addLog } from '../utils/logger';
+import useStore from '../store/useStore';
 
 const hotkeys = [
   { keys: 'Shift + T', desc: 'Toggle Command Terminal' },
@@ -35,6 +38,44 @@ export default function Navbar({ onOpenAnalytics }) {
     }).toUpperCase();
   };
 
+  const handleExportSitRep = async () => {
+    const camps = await db.camps.toArray();
+    const logs = await db.logs.toArray();
+    const borders = await db.borders.toArray();
+
+    const report = {
+      title: 'PROJECT RAKSHAK — SITUATION REPORT',
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalCamps: camps.length,
+        totalTroops: camps.reduce((s, c) => s + c.troopsCount, 0),
+        avgAmmo: camps.length ? Math.round(camps.reduce((s, c) => s + c.ammoLevel, 0) / camps.length) : 0,
+        avgSupplies: camps.length ? Math.round(camps.reduce((s, c) => s + c.suppliesLevel, 0) / camps.length) : 0,
+        criticalCamps: camps.filter((c) => c.status === 'critical').length,
+        alertCamps: camps.filter((c) => c.status === 'alert').length,
+      },
+      camps: camps.map(({ id, ...rest }) => rest),
+      borders: borders.map(({ id, ...rest }) => rest),
+      recentLogs: logs.slice(-50).map(({ id, ...rest }) => rest),
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `rakshak_sitrep_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    await addLog('SITREP EXPORTED SECURELY', 'INFO', `File: rakshak_sitrep_${date}.json`);
+    useStore.getState().addToast({
+      type: 'success',
+      title: '📥 SITREP EXPORTED',
+      message: 'Situation report downloaded successfully.'
+    });
+  };
+
   return (
     <nav className="glass h-14 flex items-center justify-between px-6 z-50 relative">
       <div className="flex items-center gap-3">
@@ -56,6 +97,14 @@ export default function Navbar({ onOpenAnalytics }) {
         >
           <BarChart3 className="w-4 h-4" />
           ANALYTICS
+        </button>
+
+        <button
+          onClick={handleExportSitRep}
+          className="flex items-center gap-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+        >
+          <Download className="w-4 h-4" />
+          EXPORT SITREP
         </button>
 
         <div className="flex items-center gap-2 text-slate-300">
