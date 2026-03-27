@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Shield, Radio, Clock, Wifi, BarChart3 } from 'lucide-react';
+import { Shield, Radio, Clock, Wifi, BarChart3, Keyboard, X } from 'lucide-react';
+
+const hotkeys = [
+  { keys: 'Shift + T', desc: 'Toggle Command Terminal' },
+  { keys: 'Shift + A', desc: 'Add New Camp' },
+  { keys: 'Shift + R', desc: 'Open Analytics Dashboard' },
+  { keys: 'Escape', desc: 'Close All Modals/Panels' },
+];
 
 export default function Navbar({ onOpenAnalytics }) {
   const [time, setTime] = useState(new Date());
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -58,6 +66,37 @@ export default function Navbar({ onOpenAnalytics }) {
         <div className="flex items-center gap-2 text-slate-300">
           <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
           <span className="text-xs font-mono">LINK ACTIVE</span>
+        </div>
+
+        <div className="relative">
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="flex items-center gap-1.5 bg-slate-800/40 hover:bg-slate-700/40 border border-slate-700/50 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-lg text-xs transition-all"
+          >
+            <Keyboard className="w-4 h-4" />
+            <span className="font-mono">HOTKEYS</span>
+          </button>
+
+          {showHelp && (
+            <div className="absolute right-0 top-full mt-2 glass rounded-lg p-4 w-72 z-[9999]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] text-emerald-400 font-mono tracking-widest font-bold">KEYBOARD SHORTCUTS</span>
+                <button onClick={() => setShowHelp(false)} className="text-slate-500 hover:text-slate-300">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {hotkeys.map((h) => (
+                  <div key={h.keys} className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">{h.desc}</span>
+                    <kbd className="bg-slate-800 border border-slate-600 text-emerald-400 text-[10px] font-mono px-2 py-0.5 rounded">
+                      {h.keys}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
