@@ -65,6 +65,25 @@ body {
   animation: radar-ping 2s ease-out infinite;
 }
 
+/* Slide animations */
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-right {
+  animation: slide-right 0.3s ease-out;
+}
+
 /* Glassmorphism */
 .glass {
   background: rgba(15, 23, 42, 0.75);
