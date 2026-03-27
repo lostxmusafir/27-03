@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 const useStore = create((set) => ({
+  isAuthenticated: false,
+  setIsAuthenticated: (val) => set({ isAuthenticated: val }),
   selectedCamp: null,
   setSelectedCamp: (camp) => set({ selectedCamp: camp }),
 
