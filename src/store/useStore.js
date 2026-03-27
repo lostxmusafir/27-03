@@ -7,6 +7,12 @@ const useStore = create((set) => ({
   showAddCampForm: false,
   setShowAddCampForm: (show) => set({ showAddCampForm: show }),
 
+  showAnalytics: false,
+  setShowAnalytics: (show) => set({ showAnalytics: show }),
+
+  showTerminal: true,
+  setShowTerminal: (show) => set({ showTerminal: show }),
+
   mapClickCoords: null,
   setMapClickCoords: (coords) => set({ mapClickCoords: coords }),
 
