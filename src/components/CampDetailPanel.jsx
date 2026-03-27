@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, Trash2, MapPin, Users, Crosshair, Package } from 'lucide-react';
 import db from '../db';
 import useStore from '../store/useStore';
+import { addLog } from '../utils/logger';
 
 export default function CampDetailPanel() {
   const { selectedCamp, setSelectedCamp } = useStore();
@@ -30,6 +31,12 @@ export default function CampDetailPanel() {
     });
     const updated = await db.camps.get(selectedCamp.id);
     setSelectedCamp(updated);
+    const logType = newStatus === 'critical' ? 'CRITICAL' : newStatus === 'alert' ? 'WARNING' : 'INFO';
+    await addLog(
+      `CAMP UPDATED: ${selectedCamp.name}`,
+      logType,
+      `Troops: ${troopsCount} | Ammo: ${ammoLevel}% | Supplies: ${suppliesLevel}% | Status: ${newStatus.toUpperCase()}`
+    );
     useStore.getState().addToast({
       type: 'success',
       title: '✅ CAMP UPDATED',
@@ -38,12 +45,18 @@ export default function CampDetailPanel() {
   };
 
   const handleDelete = async () => {
+    const campName = selectedCamp.name;
     await db.camps.delete(selectedCamp.id);
     setSelectedCamp(null);
+    await addLog(
+      `CAMP DECOMMISSIONED: ${campName}`,
+      'WARNING',
+      'All resources released'
+    );
     useStore.getState().addToast({
       type: 'info',
       title: '🗑️ CAMP REMOVED',
-      message: `${selectedCamp.name} has been decommissioned.`
+      message: `${campName} has been decommissioned.`
     });
   };
 

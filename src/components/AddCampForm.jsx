@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, MapPin, Save } from 'lucide-react';
 import db from '../db';
 import useStore from '../store/useStore';
+import { addLog } from '../utils/logger';
 
 export default function AddCampForm() {
   const { showAddCampForm, setShowAddCampForm, mapClickCoords, setMapClickCoords } = useStore();
@@ -43,6 +44,11 @@ export default function AddCampForm() {
       suppliesLevel: parseInt(suppliesLevel),
       lastUpdated: new Date().toISOString()
     });
+    await addLog(
+      `CAMP DEPLOYED: ${name}`,
+      'INFO',
+      `Coords: ${lat}, ${lng} | Troops: ${troopsCount}`
+    );
     useStore.getState().addToast({
       type: 'success',
       title: '✅ CAMP ADDED',

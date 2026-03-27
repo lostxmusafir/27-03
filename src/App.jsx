@@ -6,6 +6,7 @@ import MapView from './components/MapView';
 import ToastContainer from './components/ToastContainer';
 import AddCampForm from './components/AddCampForm';
 import CampDetailPanel from './components/CampDetailPanel';
+import CommandTerminal from './components/CommandTerminal';
 
 function App() {
   useEffect(() => {
@@ -15,10 +16,11 @@ function App() {
   return (
     <div className="h-screen w-screen flex flex-col bg-slate-900 overflow-hidden">
       <Navbar />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <Sidebar />
         <MapView />
       </div>
+      <CommandTerminal />
       <CampDetailPanel />
       <AddCampForm />
       <ToastContainer />

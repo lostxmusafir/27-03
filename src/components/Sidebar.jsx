@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { MapPin, Plus, AlertTriangle, Shield, Crosshair } from 'lucide-react';
 import db from '../db';
 import useStore from '../store/useStore';
+import { addLog } from '../utils/logger';
 
 const statusConfig = {
   normal: { color: 'bg-emerald-500', text: 'text-emerald-400', label: 'NORMAL' },
@@ -17,12 +18,19 @@ export default function Sidebar() {
     if (!camps || camps.length === 0) return;
     const randomIndex = Math.floor(Math.random() * camps.length);
     const camp = camps[randomIndex];
+    const newAmmo = Math.floor(Math.random() * 15) + 5;
+    const newSupplies = Math.floor(Math.random() * 15) + 5;
     await db.camps.update(camp.id, {
       status: 'critical',
-      ammoLevel: Math.floor(Math.random() * 15) + 5,
-      suppliesLevel: Math.floor(Math.random() * 15) + 5,
+      ammoLevel: newAmmo,
+      suppliesLevel: newSupplies,
       lastUpdated: new Date().toISOString()
     });
+    await addLog(
+      `ALERT: ${camp.name} status changed to CRITICAL`,
+      'CRITICAL',
+      `Ammo: ${newAmmo}%, Supplies: ${newSupplies}%`
+    );
     useStore.getState().addToast({
       type: 'error',
       title: '⚠️ ALERT TRIGGERED',
