@@ -2,10 +2,11 @@ import Dexie from 'dexie';
 
 const db = new Dexie('RakshakDB');
 
-db.version(2).stores({
+db.version(3).stores({
   camps: '++id, name, lat, lng, status, troopsCount, ammoLevel, suppliesLevel, lastUpdated',
   borders: '++id, name, type, coordinates',
-  logs: '++id, timestamp, action, type, details'
+  logs: '++id, timestamp, action, type, details',
+  convoys: '++id, sourceCampId, targetCampId, progress, payloadType, startedAt'
 });
 
 // Seed data
