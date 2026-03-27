@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { seedDatabase } from './db';
 import Navbar from './components/Navbar';
@@ -9,9 +10,10 @@ import AddCampForm from './components/AddCampForm';
 import CampDetailPanel from './components/CampDetailPanel';
 import CommandTerminal from './components/CommandTerminal';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import LoginScreen from './components/LoginScreen';
 import useStore from './store/useStore';
 
-function App() {
+function Dashboard() {
   const { showAnalytics, setShowAnalytics, showAddCampForm, setShowAddCampForm, showTerminal, setShowTerminal, setSelectedCamp } = useStore();
 
   useEffect(() => {
@@ -44,6 +46,23 @@ function App() {
       <AddCampForm />
       <ToastContainer />
     </div>
+  );
+}
+
+function App() {
+  const isAuthenticated = useStore((s) => s.isAuthenticated);
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginScreen />}
+      />
+      <Route
+        path="/dashboard"
+        element={isAuthenticated ? <Dashboard /> : <Navigate to="/" replace />}
+      />
+    </Routes>
   );
 }
 
