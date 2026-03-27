@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { MapPin, Plus, AlertTriangle, Shield, Crosshair } from 'lucide-react';
+import { MapPin, Plus, AlertTriangle, Shield, Crosshair, FileDown } from 'lucide-react';
 import db from '../db';
 import useStore from '../store/useStore';
 import { addLog } from '../utils/logger';
@@ -38,6 +38,74 @@ export default function Sidebar() {
     });
   };
 
+  const handleExportSitRep = async () => {
+    try {
+      const allCamps = await db.camps.toArray();
+      const allLogs = await db.logs.toArray();
+
+      const sitrep = {
+        report: 'SITUATION REPORT - PROJECT RAKSHAK',
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'COMMAND CENTER',
+        summary: {
+          totalCamps: allCamps.length,
+          normalCamps: allCamps.filter(c => c.status === 'normal').length,
+          alertCamps: allCamps.filter(c => c.status === 'alert').length,
+          criticalCamps: allCamps.filter(c => c.status === 'critical').length,
+          totalTroops: allCamps.reduce((sum, c) => sum + c.troopsCount, 0),
+          averageAmmoLevel: Math.round(allCamps.reduce((sum, c) => sum + c.ammoLevel, 0) / allCamps.length),
+          averageSuppliesLevel: Math.round(allCamps.reduce((sum, c) => sum + c.suppliesLevel, 0) / allCamps.length)
+        },
+        camps: allCamps.map(camp => ({
+          name: camp.name,
+          status: camp.status.toUpperCase(),
+          location: { lat: camp.lat, lng: camp.lng },
+          troops: camp.troopsCount,
+          ammoLevel: `${camp.ammoLevel}%`,
+          suppliesLevel: `${camp.suppliesLevel}%`,
+          lastUpdated: camp.lastUpdated
+        })),
+        recentLogs: allLogs.slice(-50).map(log => ({
+          timestamp: log.timestamp,
+          type: log.type,
+          action: log.action,
+          details: log.details
+        }))
+      };
+
+      const jsonString = JSON.stringify(sitrep, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `rakshak_sitrep_${dateStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      await addLog(
+        'SITREP EXPORTED SECURELY',
+        'INFO',
+        `Report generated: rakshak_sitrep_${dateStr}.json`
+      );
+
+      useStore.getState().addToast({
+        type: 'success',
+        title: '📤 SITREP EXPORTED',
+        message: 'Situation Report downloaded successfully!'
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      useStore.getState().addToast({
+        type: 'error',
+        title: '❌ EXPORT FAILED',
+        message: 'Failed to export Situation Report'
+      });
+    }
+  };
+
   return (
     <aside className="glass w-80 flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b border-slate-700/50">
@@ -61,6 +129,13 @@ export default function Sidebar() {
             SIMULATE ALERT
           </button>
         </div>
+        <button
+          onClick={handleExportSitRep}
+          className="w-full mt-2 flex items-center justify-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/30 text-cyan-400 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+        >
+          <FileDown className="w-4 h-4" />
+          EXPORT SITREP
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -74,9 +149,8 @@ export default function Sidebar() {
             <div
               key={camp.id}
               onClick={() => setSelectedCamp(camp)}
-              className={`glass-light rounded-lg p-3 cursor-pointer transition-all hover:border-emerald-500/40 ${
-                isSelected ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : ''
-              }`}
+              className={`glass-light rounded-lg p-3 cursor-pointer transition-all hover:border-emerald-500/40 ${isSelected ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : ''
+                }`}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
