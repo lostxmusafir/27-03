@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Trash2, MapPin, Users, Crosshair, Package } from 'lucide-react';
+import { X, Save, Trash2, MapPin, Users, Crosshair, Package, Truck } from 'lucide-react';
+import DispatchConvoyModal from './DispatchConvoyModal';
 import db from '../db';
 import useStore from '../store/useStore';
 import { addLog } from '../utils/logger';
@@ -9,6 +10,7 @@ export default function CampDetailPanel() {
   const [troopsCount, setTroopsCount] = useState(0);
   const [ammoLevel, setAmmoLevel] = useState(0);
   const [suppliesLevel, setSuppliesLevel] = useState(0);
+  const [showConvoyModal, setShowConvoyModal] = useState(false);
 
   useEffect(() => {
     if (selectedCamp) {
@@ -148,21 +150,36 @@ export default function CampDetailPanel() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-slate-700/50 flex gap-2">
+      <div className="p-4 border-t border-slate-700/50 space-y-2">
         <button
-          onClick={handleSave}
-          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg transition-all text-sm"
+          onClick={() => setShowConvoyModal(true)}
+          className="w-full flex items-center justify-center gap-2 bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/30 text-orange-400 font-semibold py-2.5 rounded-lg transition-all text-sm"
         >
-          <Save className="w-4 h-4" />
-          SAVE
+          <Truck className="w-4 h-4" />
+          DISPATCH CONVOY
         </button>
-        <button
-          onClick={handleDelete}
-          className="flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 font-semibold px-4 py-2.5 rounded-lg transition-all text-sm"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg transition-all text-sm"
+          >
+            <Save className="w-4 h-4" />
+            SAVE
+          </button>
+          <button
+            onClick={handleDelete}
+            className="flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-400 font-semibold px-4 py-2.5 rounded-lg transition-all text-sm"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
+
+      <DispatchConvoyModal
+        open={showConvoyModal}
+        onClose={() => setShowConvoyModal(false)}
+        sourceCamp={selectedCamp}
+      />
     </div>
   );
 }
