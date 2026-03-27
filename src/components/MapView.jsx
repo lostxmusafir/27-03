@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useLiveQuery } from 'dexie-react-hooks';
 import db from '../db';
 import useStore from '../store/useStore';
+import { addLog } from '../utils/logger';
 import 'leaflet/dist/leaflet.css';
 
 const statusColors = {
@@ -29,6 +30,35 @@ function createBlipIcon(status) {
     `,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
+  });
+}
+
+function createConvoyIcon() {
+  return L.divIcon({
+    className: 'convoy-marker',
+    html: `
+      <div style="
+        width: 28px;
+        height: 28px;
+        background: #f97316;
+        border-radius: 6px;
+        border: 2px solid #fb923c;
+        box-shadow: 0 0 16px #f9731688, 0 0 32px #f9731644;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        animation: convoy-pulse 1s ease-in-out infinite;
+      ">🚛</div>
+      <style>
+        @keyframes convoy-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+      </style>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   });
 }
 
@@ -63,6 +93,86 @@ function SelectedCampFlyTo() {
   return null;
 }
 
+function ConvoyLayer() {
+  const map = useMap();
+  const activeConvoys = useStore((s) => s.activeConvoys);
+  const markersRef = useRef({});
+  const intervalsRef = useRef({});
+
+  const finishConvoy = useCallback(async (convoy) => {
+    const marker = markersRef.current[convoy.id];
+    if (marker) {
+      map.removeLayer(marker);
+      delete markersRef.current[convoy.id];
+    }
+    if (intervalsRef.current[convoy.id]) {
+      clearInterval(intervalsRef.current[convoy.id]);
+      delete intervalsRef.current[convoy.id];
+    }
+
+    const target = await db.camps.get(convoy.targetCampId);
+    if (target) {
+      const updateField = convoy.payloadType === 'ammo' ? 'ammoLevel' : 'suppliesLevel';
+      const newValue = Math.min(100, (target[updateField] || 0) + 20);
+      await db.camps.update(target.id, {
+        [updateField]: newValue,
+        lastUpdated: new Date().toISOString()
+      });
+
+      const newStatus = target.ammoLevel < 20 || target.suppliesLevel < 20 ? 'critical' : target.ammoLevel < 40 || target.suppliesLevel < 40 ? 'alert' : 'normal';
+      await db.camps.update(target.id, { status: newStatus });
+
+      await addLog(
+        `CONVOY ARRIVED: ${target.name}`,
+        'INFO',
+        `${convoy.payloadType.toUpperCase()} +20% → ${newValue}%`
+      );
+
+      useStore.getState().addToast({
+        type: 'success',
+        title: '✅ CONVOY ARRIVED',
+        message: `${convoy.payloadType.toUpperCase()} delivered to ${target.name}`
+      });
+    }
+
+    await db.convoys.delete(convoy.id);
+    useStore.getState().removeActiveConvoy(convoy.id);
+  }, [map]);
+
+  useEffect(() => {
+    activeConvoys.forEach((convoy) => {
+      if (!markersRef.current[convoy.id]) {
+        const marker = L.marker([convoy.sourceLat, convoy.sourceLng], { icon: createConvoyIcon() }).addTo(map);
+        markersRef.current[convoy.id] = marker;
+
+        const duration = 12000;
+        const steps = 120;
+        const interval = duration / steps;
+        let step = 0;
+
+        intervalsRef.current[convoy.id] = setInterval(() => {
+          step++;
+          const progress = step / steps;
+          const lat = convoy.sourceLat + (convoy.targetLat - convoy.sourceLat) * progress;
+          const lng = convoy.sourceLng + (convoy.targetLng - convoy.sourceLng) * progress;
+          marker.setLatLng([lat, lng]);
+          useStore.getState().updateConvoyProgress(convoy.id, Math.round(progress * 100));
+
+          if (step >= steps) {
+            finishConvoy(convoy);
+          }
+        }, interval);
+      }
+    });
+
+    return () => {
+      Object.values(intervalsRef.current).forEach(clearInterval);
+    };
+  }, [activeConvoys, map, finishConvoy]);
+
+  return null;
+}
+
 export default function MapView() {
   const camps = useLiveQuery(() => db.camps.toArray());
   const borders = useLiveQuery(() => db.borders.toArray());
@@ -80,6 +190,7 @@ export default function MapView() {
         <MapRefresher />
         <MapClickHandler />
         <SelectedCampFlyTo />
+        <ConvoyLayer />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
